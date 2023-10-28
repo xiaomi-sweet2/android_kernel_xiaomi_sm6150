@@ -32,7 +32,6 @@
 #include <linux/pmic-voter.h>
 #include "step-chg-jeita.h"
 #include <linux/time.h>
-#include <linux/hardware_info.h>
 #include <linux/reboot.h>
 
 enum print_reason {
@@ -2010,7 +2009,6 @@ static void fg_update_status(struct bq_fg_chip *bq)
 
 	if (bq->chip_id == BATT_NOT_DEFAULT) {
         if (status != BATT_NOT_DEFAULT) {
-			hardwareinfo_set_prop(HARDWARE_BATTERY_ID, battery_name[status]);
 			bq->chip_id = status;
         }
 		bq->batt_soc = 25;
@@ -2902,7 +2900,6 @@ static int fg_get_property(struct power_supply *psy, enum power_supply_property 
 	case POWER_SUPPLY_PROP_MI_BATTERY_ID:
 		status = fg_read_battID(bq);
 		if ((bq->chip_id == BATT_NOT_DEFAULT) && (status != bq->chip_id)) {
-			//hardwareinfo_set_prop(HARDWARE_BATTERY_ID, battery_name[status]);
 			bq->chip_id = status;
 			if(bq->chip_id == BATT_NOT_DEFAULT) {
 				is_std_battery = false;
@@ -3170,8 +3167,6 @@ static int bq_fg_probe(struct i2c_client *client,
 	bq_dbg(PR_REGISTER, "bq fuel gauge probe successfully, %s\n",
 			device2str[bq->chip]);
 
-	hardwareinfo_set_prop(HARDWARE_BMS_GAUGE, "BQ27Z561");
-	hardwareinfo_set_prop(HARDWARE_BATTERY_ID, battery_name[status]);
 	bq->batt_soc = fg_read_system_soc(bq);
 	return 0;
 }
