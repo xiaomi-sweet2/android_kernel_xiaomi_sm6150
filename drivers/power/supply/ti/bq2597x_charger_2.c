@@ -40,7 +40,6 @@
 /*#include "bq2597x.h"*/
 
 #include <soc/qcom/socinfo.h>
-#include <linux/hardware_info.h>
 
 extern char *saved_command_line;
 
@@ -2579,7 +2578,6 @@ static int bq2597x_charger_probe(struct i2c_client *client,
 	determine_initial_status(bq);
 	/* schedule_delayed_work(&bq->monitor_work, 60 * HZ); */
 	bq_info("bq2597x probe successfully, Part Num = %d, chip_vendor = %d\n!", bq->part_no, bq->chip_vendor);
-	hardwareinfo_set_prop(HARDWARE_SUB_CHARGER_SLAVE, "SC8551_CHARGER_SLAVE");
 
 	return 0;
 
