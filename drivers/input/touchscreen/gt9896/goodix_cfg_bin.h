@@ -3,7 +3,11 @@
 
 #include "goodix_ts_core.h"
 
+#ifdef CONFIG_MACH_XIAOMI_SWEET2
+#define TS_DEFAULT_CFG_BIN				"goodix_gt9896_cfg_k6a.bin"
+#else
 #define TS_DEFAULT_CFG_BIN				"goodix_gt9896_cfg.bin"
+#endif
 #define TS_BIN_VERSION_START_INDEX		5
 #define TS_BIN_VERSION_LEN				4
 #define TS_CFG_BIN_HEAD_RESERVED_LEN	6
