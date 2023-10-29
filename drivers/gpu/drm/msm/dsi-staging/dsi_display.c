@@ -63,6 +63,11 @@ static const struct of_device_id dsi_display_dt_match[] = {
 
 struct dsi_display *primary_display;
 
+#ifdef CONFIG_MACH_XIAOMI_SWEET2
+static bool is_display_enabled;
+bool is_first_supply_panel;
+#endif
+
 static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
 			u32 mask, bool enable)
 {
@@ -240,12 +245,22 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 		goto error;
 	}
 
+#ifdef CONFIG_MACH_XIAOMI_SWEET2
+	if (is_first_supply_panel && is_display_enabled && bl_lvl) {
+		is_display_enabled = false;
+		msleep(1);
+		rc = dsi_panel_set_backlight(panel, (u32)bl_temp);
+		if (rc)
+			pr_err("unable to set backlight second time\n");
+	}
+#endif
+
 error:
 	mutex_unlock(&panel->panel_lock);
 	return rc;
 }
 
-static int dsi_display_cmd_engine_enable(struct dsi_display *display)
+int dsi_display_cmd_engine_enable(struct dsi_display *display)
 {
 	int rc = 0;
 	int i;
@@ -289,7 +304,7 @@ done:
 	return rc;
 }
 
-static int dsi_display_cmd_engine_disable(struct dsi_display *display)
+int dsi_display_cmd_engine_disable(struct dsi_display *display)
 {
 	int rc = 0;
 	int i;
@@ -475,7 +490,7 @@ error:
 }
 
 /* Allocate memory for cmd dma tx buffer */
-static int dsi_host_alloc_cmd_tx_buffer(struct dsi_display *display)
+int dsi_host_alloc_cmd_tx_buffer(struct dsi_display *display)
 {
 	int rc = 0, cnt = 0;
 	struct dsi_display_ctrl *display_ctrl;
@@ -5507,6 +5522,11 @@ static int dsi_display_bind(struct device *dev,
 		goto error_host_deinit;
 	}
 
+#ifdef CONFIG_MACH_XIAOMI_SWEET2
+	if (!strcmp(display->panel->name, "xiaomi k6 38 0e 0b fhd dsc video dsi panel"))
+		is_first_supply_panel = true;
+#endif
+
 	pr_info("Successfully bind display panel '%s'\n", display->name);
 	display->drm_dev = drm;
 
@@ -7846,6 +7866,10 @@ int dsi_display_enable(struct dsi_display *display)
 		rc = -EINVAL;
 		goto error_disable_panel;
 	}
+
+#ifdef CONFIG_MACH_XIAOMI_SWEET2
+	is_display_enabled = true;
+#endif
 
 	goto error;
 
