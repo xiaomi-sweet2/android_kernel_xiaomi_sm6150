@@ -5335,7 +5335,8 @@ static int cam_ife_hw_mgr_check_irq_for_dual_vfe(
 	struct cam_ife_hw_mgr_ctx   *ife_hw_mgr_ctx,
 	uint32_t                     core_idx0,
 	uint32_t                     core_idx1,
-	uint32_t                     hw_event_type)
+	uint32_t                     hw_event_type,
+	bool                         detect_mismatch)
 {
 	int32_t rc = -1;
 	uint32_t *event_cnt = NULL;
@@ -5364,10 +5365,10 @@ static int cam_ife_hw_mgr_check_irq_for_dual_vfe(
 		return rc;
 	}
 
-	if ((event_cnt[core_idx0] &&
+	if (detect_mismatch && ((event_cnt[core_idx0] &&
 		(event_cnt[core_idx0] - event_cnt[core_idx1] > 1)) ||
 		(event_cnt[core_idx1] &&
-		(event_cnt[core_idx1] - event_cnt[core_idx0] > 1))) {
+		(event_cnt[core_idx1] - event_cnt[core_idx0] > 1)))) {
 
 		if (ife_hw_mgr_ctx->dual_ife_irq_mismatch_cnt > 10) {
 			rc = -1;
@@ -5495,7 +5496,13 @@ static int cam_ife_hw_mgr_handle_epoch_for_camif_hw_res(
 					ife_hwr_mgr_ctx,
 					core_index0,
 					core_index1,
-					evt_payload->evt_id);
+					CAM_ISP_HW_EVENT_SOF,
+					false);
+			if (rc)
+				break;
+			rc = cam_ife_hw_mgr_check_irq_for_dual_vfe(ife_hwr_mgr_ctx,
+				core_index0, core_index1,
+				CAM_ISP_HW_EVENT_EPOCH, true);
 
 			if (atomic_read(&ife_hwr_mgr_ctx->overflow_pending))
 				break;
@@ -5607,7 +5614,7 @@ static int cam_ife_hw_mgr_process_camif_sof(
 			break;
 
 		rc = cam_ife_hw_mgr_check_irq_for_dual_vfe(ife_hwr_mgr_ctx,
-			core_index0, core_index1, evt_payload->evt_id);
+			core_index0, core_index1, evt_payload->evt_id, true);
 
 		break;
 
@@ -5826,7 +5833,8 @@ static int cam_ife_hw_mgr_handle_eof_for_camif_hw_res(
 					ife_hwr_mgr_ctx,
 					core_index0,
 					core_index1,
-					evt_payload->evt_id);
+					evt_payload->evt_id,
+					true);
 
 			if (atomic_read(&ife_hwr_mgr_ctx->overflow_pending))
 				break;
