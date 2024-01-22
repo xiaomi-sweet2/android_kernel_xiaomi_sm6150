@@ -3657,50 +3657,83 @@ irqreturn_t cam_ife_csid_irq(int irq_num, void *data)
 	if (csid_hw->device_enabled == 1) {
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_LANE0_FIFO_OVERFLOW) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d lane 0 over flow",
+				 csid_hw->hw_intf->hw_idx);
 			fatal_err_detected = true;
-			goto handle_fatal_error;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_LANE1_FIFO_OVERFLOW) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d lane 1 over flow",
+				 csid_hw->hw_intf->hw_idx);
 			fatal_err_detected = true;
-			goto handle_fatal_error;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_LANE2_FIFO_OVERFLOW) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d lane 2 over flow",
+				 csid_hw->hw_intf->hw_idx);
 			fatal_err_detected = true;
-			goto handle_fatal_error;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_LANE3_FIFO_OVERFLOW) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d lane 3 over flow",
+				 csid_hw->hw_intf->hw_idx);
 			fatal_err_detected = true;
-			goto handle_fatal_error;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_TG_FIFO_OVERFLOW) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d TG OVER FLOW",
+				 csid_hw->hw_intf->hw_idx);
 			fatal_err_detected = true;
-			goto handle_fatal_error;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_CPHY_EOT_RECEPTION) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP,
+				"CSID:%d CPHY_EOT_RECEPTION",
+				 csid_hw->hw_intf->hw_idx);
 			csid_hw->error_irq_count++;
 			need_dump_csid_err = true;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_CPHY_SOT_RECEPTION) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP,
+				"CSID:%d CPHY_SOT_RECEPTION",
+				 csid_hw->hw_intf->hw_idx);
 			csid_hw->error_irq_count++;
 			need_dump_csid_err = true;
 		}
+		if (irq_status[CSID_IRQ_STATUS_RX] & CSID_CSI2_RX_ERROR_CPHY_PH_CRC) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d CPHY_PH_CRC",
+				 csid_hw->hw_intf->hw_idx);
+		}
+		if (irq_status[CSID_IRQ_STATUS_RX] & CSID_CSI2_RX_ERROR_CRC) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d ERROR_CRC",
+				 csid_hw->hw_intf->hw_idx);
+		}
+		if (irq_status[CSID_IRQ_STATUS_RX] & CSID_CSI2_RX_ERROR_ECC) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d ERROR_ECC",
+				 csid_hw->hw_intf->hw_idx);
+		}
+		if (irq_status[CSID_IRQ_STATUS_RX] & CSID_CSI2_RX_ERROR_MMAPPED_VC_DT) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d MMAPPED_VC_DT",
+				 csid_hw->hw_intf->hw_idx);
+		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_STREAM_UNDERFLOW) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP,
+				"CSID:%d ERROR_STREAM_UNDERFLOW",
+				 csid_hw->hw_intf->hw_idx);
 			csid_hw->error_irq_count++;
 			need_dump_csid_err = true;
 		}
 		if (irq_status[CSID_IRQ_STATUS_RX] &
 			CSID_CSI2_RX_ERROR_UNBOUNDED_FRAME) {
+			CAM_ERR_RATE_LIMIT(CAM_ISP, "CSID:%d UNBOUNDED_FRAME",
+				 csid_hw->hw_intf->hw_idx);
 			csid_hw->error_irq_count++;
 			need_dump_csid_err = true;
 		}
 	}
+	spin_unlock_irqrestore(&csid_hw->lock_state, flags);
 
 	if (csid_hw->error_irq_count >
 		CAM_IFE_CSID_MAX_IRQ_ERROR_COUNT) {
@@ -3712,13 +3745,7 @@ irqreturn_t cam_ife_csid_irq(int irq_num, void *data)
 			irq_status);
 	}
 
-handle_fatal_error:
-	spin_unlock_irqrestore(&csid_hw->lock_state, flags);
 	if (fatal_err_detected) {
-		CAM_INFO(CAM_ISP,
-			"CSID: %d cnt: %d Halt csi2 rx irq_status_rx:0x%x",
-			csid_hw->hw_intf->hw_idx, csid_hw->csi2_cfg_cnt,
-			irq_status[CSID_IRQ_STATUS_RX]);
 		cam_ife_csid_halt_csi2(csid_hw);
 		cam_csid_dispatch_irq(csid_hw,
 			CAM_ISP_HW_ERROR_CSID_FATAL,
