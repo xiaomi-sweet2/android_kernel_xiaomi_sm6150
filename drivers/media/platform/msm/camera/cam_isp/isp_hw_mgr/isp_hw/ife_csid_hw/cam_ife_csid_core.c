@@ -2712,6 +2712,7 @@ static int cam_ife_csid_reset(void *hw_priv,
 	csid_hw = (struct cam_ife_csid_hw   *)csid_hw_info->core_info;
 	reset   = (struct cam_csid_reset_cfg_args  *)reset_args;
 
+	mutex_lock(&csid_hw->hw_info->hw_mutex);
 	switch (reset->reset_type) {
 	case CAM_IFE_CSID_RESET_GLOBAL:
 		rc = cam_ife_csid_global_reset(csid_hw);
@@ -2725,6 +2726,7 @@ static int cam_ife_csid_reset(void *hw_priv,
 		rc = -EINVAL;
 		break;
 	}
+	mutex_unlock(&csid_hw->hw_info->hw_mutex);
 
 	return rc;
 }
