@@ -2619,6 +2619,7 @@ static int cam_ife_mgr_stop_hw_in_overflow(void *stop_hw_args)
 	struct cam_ife_hw_mgr_ctx        *ctx;
 	uint32_t                          i, master_base_idx = 0;
 
+	dump_stack();
 	if (!stop_hw_args) {
 		CAM_ERR(CAM_ISP, "Invalid arguments");
 		return -EINVAL;
