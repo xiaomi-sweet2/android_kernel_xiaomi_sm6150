@@ -14,7 +14,6 @@
 #include "cam_sensor_i2c.h"
 #include "cam_sensor_io.h"
 
-
 #ifdef __XIAOMI_CAMERA__
 #define I2C_REG_DATA_MAX       8542
 #else

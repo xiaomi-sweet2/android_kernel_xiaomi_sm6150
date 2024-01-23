@@ -34,12 +34,16 @@ void cam_sync_print_fence_table(void)
 	int cnt;
 
 	for (cnt = 0; cnt < CAM_SYNC_MAX_OBJS; cnt++) {
-		CAM_INFO(CAM_SYNC, "%d, %s, %d, %d, %d",
-			sync_dev->sync_table[cnt].sync_id,
-			sync_dev->sync_table[cnt].name,
-			sync_dev->sync_table[cnt].type,
-			sync_dev->sync_table[cnt].state,
-			sync_dev->sync_table[cnt].ref_cnt);
+		spin_lock_bh(&sync_dev->row_spinlocks[cnt]);
+		if (test_bit(cnt, sync_dev->bitmap)) {
+			CAM_INFO(CAM_SYNC, "row[%d], name[%s], type[%d], state[%d], ref_cnt[%d]",
+				sync_dev->sync_table[cnt].sync_id,
+				sync_dev->sync_table[cnt].name,
+				sync_dev->sync_table[cnt].type,
+				sync_dev->sync_table[cnt].state,
+				sync_dev->sync_table[cnt].ref_cnt);
+		}
+		spin_unlock_bh(&sync_dev->row_spinlocks[cnt]);
 	}
 }
 
@@ -352,7 +356,7 @@ int cam_sync_get_obj_ref(int32_t sync_obj)
 
 	if (row->state != CAM_SYNC_STATE_ACTIVE) {
 		spin_unlock(&sync_dev->row_spinlocks[sync_obj]);
-		CAM_ERR_RATE_LIMIT_CUSTOM(CAM_SYNC, 1, 5,
+		CAM_ERR(CAM_SYNC,
 			"accessing an uninitialized sync obj = %d state = %d",
 			sync_obj, row->state);
 		return -EINVAL;

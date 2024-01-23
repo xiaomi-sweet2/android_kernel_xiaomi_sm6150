@@ -1,5 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (c) 2021 Qualcomm Innovation Center, Inc. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -19,7 +18,6 @@
 #include "cam_trace.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
-
 
 static void cam_sensor_update_req_mgr(
 	struct cam_sensor_ctrl_t *s_ctrl,
@@ -370,12 +368,8 @@ int32_t cam_sensor_update_slave_info(struct cam_cmd_probe *probe_info,
 	/* Userspace passes the pipeline delay in reserved field */
 	s_ctrl->pipeline_delay =
 		probe_info->reserved;
-
-#if (defined CONFIG_LDO_WL2866D) || (defined CONFIG_MACH_XIAOMI_VIOLET)
-	s_ctrl->sensordata->camera_id = probe_info->camera_id;
-#endif
-#ifdef CONFIG_MACH_XIAOMI_VIOLET
-	s_ctrl->sensordata->sensorName = probe_info->sensorName;
+#ifdef CONFIG_LDO_WL2866D
+        s_ctrl->sensordata->camera_id = probe_info->camera_id;
 #endif
 	s_ctrl->sensor_probe_addr_type =  probe_info->addr_type;
 	s_ctrl->sensor_probe_data_type =  probe_info->data_type;
@@ -563,8 +557,6 @@ void cam_sensor_query_cap(struct cam_sensor_ctrl_t *s_ctrl,
 		s_ctrl->sensordata->subdev_id[SUB_MODULE_LED_FLASH];
 	query_cap->ois_slot_id =
 		s_ctrl->sensordata->subdev_id[SUB_MODULE_OIS];
-	query_cap->ir_led_slot_id =
-		s_ctrl->sensordata->subdev_id[SUB_MODULE_IR_LED];
 	query_cap->slot_info =
 		s_ctrl->soc_info.index;
 #ifdef CONFIG_SOFTLED_CAMERA
@@ -657,139 +649,7 @@ int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
 	return rc;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VIOLET
-static int msm_sensor_parse_data(struct cam_sensor_ctrl_t *s_ctrl,
-	uint32_t values_addr[7], uint32_t values_data[7], int oem)
-{
-	struct cam_sensor_i2c_reg_setting i2c_reg_settings = {0};
-	struct cam_sensor_i2c_reg_array i2c_reg_array = {0};
-	int rc = 0, i, max_i;
-	/* oem: 0 - Sony, 1 - Samsung, 2 - Omnivision */
-
-	if (oem < 2)
-		max_i = 4;
-	else
-		max_i = 3;
-
-	for (i = 0; i < max_i; i++) {
-		pr_info("oem id: %i, retry: %i, max_retries: %i", oem, i, max_i);
-		if (!oem) {
-			i2c_reg_settings.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
-			i2c_reg_settings.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
-			if (i == 3)
-				i2c_reg_array.delay = 15;
-			else
-				i2c_reg_array.delay = 1;
-		} else {
-			i2c_reg_settings.addr_type = 2;
-			i2c_reg_settings.data_type = 1;
-			i2c_reg_array.delay = 1;
-		}
-
-		i2c_reg_settings.size = 1;
-		i2c_reg_array.reg_addr = values_addr[i];
-		i2c_reg_array.reg_data = values_data[i];
-		i2c_reg_settings.reg_setting = &i2c_reg_array;
-
-		rc = camera_io_dev_write(&s_ctrl->io_master_info,
-			&i2c_reg_settings);
-		if (rc < 0)
-			CAM_ERR(CAM_SENSOR, "page write failed rc %i", rc);
-	}
-
-	return rc;
-}
-
-static uint16_t msm_sensor_power_up_sony_imx586(struct cam_sensor_ctrl_t *s_ctrl)
-{
-	int rc = 0;
-	uint32_t values_addr[4] = { 0x0136, 0x0137, 0x0A02, 0x0A00 };
-	uint32_t values_data[4] = { 0x18, 0x00, 0x7F, 0x01 };
-
-	rc = msm_sensor_parse_data(s_ctrl, values_addr, values_data, 0);
-	if (rc < 0)
-		goto error;
-
-	return rc;
-error:
-	CAM_ERR(CAM_SENSOR, "xy++ page write failed rc %i", rc);
-	return rc;
-}
-
-static uint16_t msm_sensor_power_up_samsung_5e8(struct cam_sensor_ctrl_t *s_ctrl)
-{
-	int rc = 0;
-	uint32_t values_addr[4] = { 0x0100, 0x0a00, 0x0a02, 0x0a00 };
-	uint32_t values_data[4] = { 0x00, 0x04, 0x00, 0x01 };
-
-	rc = msm_sensor_parse_data(s_ctrl, values_addr, values_data, 1);
-	if (rc < 0)
-		goto error;
-
-	return rc;
-error:
-	CAM_ERR(CAM_SENSOR, "lxl page write failed rc %i", rc);
-	return rc;
-}
-
-static uint16_t msm_sensor_power_up_ovti_13855(struct cam_sensor_ctrl_t *s_ctrl)
-{
-
-	int rc = 0;
-	uint32_t values_addr[7] = { 0x3d81, 0x3d84, 0x3d88, 0x3d89, 0x3d8a, 0x3d8b, 0x0100 };
-	uint32_t values_data[7] = { 0x01, 0x40, 0x70, 0x00, 0x70, 0x0f };
-
-	rc = msm_sensor_parse_data(s_ctrl, values_addr, values_data, 2);
-	if (rc < 0)
-		goto error;
-
-	return rc;
-error:
-	CAM_ERR(CAM_SENSOR, "xy++ page write failed rc %d", rc);
-	return rc;
-}
-
-#define CAM_BACK 0
-#define CAM_AUX_BACK 1
-#define CAM_FRONT 2
-
-static int msm_sensor_power_up_per_id(struct cam_sensor_ctrl_t *s_ctrl)
-{
-	int rc = 0;
-	int sensor_id = s_ctrl->sensordata->camera_id;
-
-	switch (sensor_id) {
-		case CAM_AUX_BACK:
-			rc = msm_sensor_power_up_sony_imx586(s_ctrl);
-			if (rc < 0) {
-				CAM_ERR(CAM_SENSOR, "sersor %i powerup failed", sensor_id);
-				return rc;
-			}
-			break;
-		case CAM_BACK:
-			rc = msm_sensor_power_up_samsung_5e8(s_ctrl);
-			if (rc < 0) {
-				CAM_ERR(CAM_SENSOR, "sersor %i powerup failed", sensor_id);
-				return rc;
-			}
-			break;
-		case CAM_FRONT:
-			rc = msm_sensor_power_up_ovti_13855(s_ctrl);
-			if (rc < 0) {
-				CAM_ERR(CAM_SENSOR, "sersor %i powerup failed", sensor_id);
-				return rc;
-			}
-			break;
-		default:
-			CAM_ERR(CAM_SENSOR, "unknown sensor");
-			return -1;
-			break;
-	}
-	return 0;
-}
-#endif
-
-static uint32_t g_operation_mode;
+static uint32_t g_operation_mode;// XIAOMI: libin16 add for face unlock
 int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	void *arg)
 {
@@ -872,25 +732,11 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			goto free_power_settings;
 		}
 
-#ifdef CONFIG_MACH_XIAOMI_VIOLET
-		rc = msm_sensor_power_up_per_id(s_ctrl);
-		if (rc < 0) {
-			msleep(20);
-			goto free_power_settings;
-		}
-
-		CAM_INFO(CAM_SENSOR,
-			"Probe success,slot:%d,slave_addr:0x%x,sensor_id:0x%x sensor_name:%s",
-			s_ctrl->soc_info.index,
-			s_ctrl->sensordata->slave_info.sensor_slave_addr,
-			s_ctrl->sensordata->slave_info.sensor_id,s_ctrl->sensordata->sensorName);
-#else
 		CAM_INFO(CAM_SENSOR,
 			"Probe success,slot:%d,slave_addr:0x%x,sensor_id:0x%x",
 			s_ctrl->soc_info.index,
 			s_ctrl->sensordata->slave_info.sensor_slave_addr,
 			s_ctrl->sensordata->slave_info.sensor_id);
-#endif
 
 		rc = cam_sensor_power_down(s_ctrl);
 		if (rc < 0) {
@@ -917,7 +763,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			rc = -EINVAL;
 			goto release_mutex;
 		}
-
 		if (s_ctrl->bridge_intf.device_hdl != -1) {
 			CAM_ERR(CAM_SENSOR, "Device is already acquired");
 			rc = -EINVAL;
@@ -931,22 +776,19 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			goto release_mutex;
 		}
 
+		// XIAOMI: libin16 add for face unlock --start
 		g_operation_mode = sensor_acq_dev.operation_mode;
 		CAM_DBG(CAM_SENSOR, "operation mode :%d", g_operation_mode);
+		// XIAOMI: libin16 add for face unlock --end
 
 		bridge_params.session_hdl = sensor_acq_dev.session_handle;
 		bridge_params.ops = &s_ctrl->bridge_intf.ops;
 		bridge_params.v4l2_sub_dev_flag = 0;
 		bridge_params.media_entity_flag = 0;
 		bridge_params.priv = s_ctrl;
-		bridge_params.dev_id = CAM_SENSOR;
+
 		sensor_acq_dev.device_handle =
 			cam_create_device_hdl(&bridge_params);
-		if (sensor_acq_dev.device_handle <= 0) {
-			rc = -EFAULT;
-			CAM_ERR(CAM_SENSOR, "Can not create device handle");
-			goto release_mutex;
-		}
 		s_ctrl->bridge_intf.device_hdl = sensor_acq_dev.device_handle;
 		s_ctrl->bridge_intf.session_hdl = sensor_acq_dev.session_handle;
 
@@ -959,7 +801,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			rc = -EFAULT;
 			goto release_mutex;
 		}
-
 		rc = cam_sensor_power_up(s_ctrl);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR, "Sensor Power up failed");
@@ -998,7 +839,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			CAM_ERR(CAM_SENSOR, "Sensor Power Down failed");
 			goto release_mutex;
 		}
-
 		cam_sensor_release_per_frame_resource(s_ctrl);
 		cam_sensor_release_stream_rsc(s_ctrl);
 		if (s_ctrl->bridge_intf.device_hdl == -1) {
@@ -1111,16 +951,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	}
 		break;
 	case CAM_CONFIG_DEV: {
-		if (s_ctrl->sensor_state < CAM_SENSOR_ACQUIRE) {
-			rc = -EINVAL;
-			CAM_ERR(CAM_SENSOR,
-				"sensor_id:[0x%x] not acquired to configure [%d] ",
-				s_ctrl->sensordata->slave_info.sensor_id,
-				s_ctrl->sensor_state
-			);
-			goto release_mutex;
-		}
-
 		rc = cam_sensor_i2c_pkt_parse(s_ctrl, arg);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR, "Failed i2c pkt parse: %d", rc);
@@ -1131,13 +961,9 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 
 			rc = cam_sensor_apply_settings(s_ctrl, 0,
 				CAM_SENSOR_PACKET_OPCODE_SENSOR_INITIAL_CONFIG);
-
-			s_ctrl->i2c_data.init_settings.request_id = -1;
-
 			if (rc < 0) {
 				CAM_ERR(CAM_SENSOR,
 					"cannot apply init settings");
-				delete_request(&s_ctrl->i2c_data.init_settings);
 				goto release_mutex;
 			}
 			rc = delete_request(&s_ctrl->i2c_data.init_settings);
@@ -1146,20 +972,16 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 					"Fail in deleting the Init settings");
 				goto release_mutex;
 			}
+			s_ctrl->i2c_data.init_settings.request_id = -1;
 		}
 
 		if (s_ctrl->i2c_data.config_settings.is_settings_valid &&
 			(s_ctrl->i2c_data.config_settings.request_id == 0)) {
 			rc = cam_sensor_apply_settings(s_ctrl, 0,
 				CAM_SENSOR_PACKET_OPCODE_SENSOR_CONFIG);
-
-			s_ctrl->i2c_data.config_settings.request_id = -1;
-
 			if (rc < 0) {
 				CAM_ERR(CAM_SENSOR,
 					"cannot apply config settings");
-				delete_request(
-					&s_ctrl->i2c_data.config_settings);
 				goto release_mutex;
 			}
 			rc = delete_request(&s_ctrl->i2c_data.config_settings);
@@ -1169,6 +991,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				goto release_mutex;
 			}
 			s_ctrl->sensor_state = CAM_SENSOR_CONFIG;
+			s_ctrl->i2c_data.config_settings.request_id = -1;
 		}
 	}
 		break;
@@ -1212,7 +1035,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 
 		kfree(i2c_reg_setting);
 	}
-		break;
+	break;
 	case CAM_READ_REG: {
 		struct cam_sensor_i2c_reg_setting user_reg_setting;
 		struct cam_sensor_i2c_reg_array *i2c_reg_setting;
@@ -1263,7 +1086,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		}
 		kfree(i2c_reg_setting);
 	}
-		break;
+	break;
 	default:
 		CAM_ERR(CAM_SENSOR, "Invalid Opcode: %d", cmd->op_code);
 		rc = -EINVAL;
@@ -1303,19 +1126,22 @@ int cam_sensor_publish_dev_info(struct cam_req_mgr_device_info *info)
 
 	info->dev_id = CAM_REQ_MGR_DEVICE_SENSOR;
 	strlcpy(info->name, CAM_SENSOR_NAME, sizeof(info->name));
-	if (s_ctrl->pipeline_delay >= 0 && s_ctrl->pipeline_delay <= 3)
+	if (s_ctrl->pipeline_delay >= 0 && s_ctrl->pipeline_delay <= 3)// XIAOMI: libin16 change
 		info->p_delay = s_ctrl->pipeline_delay;
 	else
 		info->p_delay = 2;
 	info->trigger = CAM_TRIGGER_POINT_SOF;
 
-	// Set pipeline delay for face unlock
+	// XIAOMI: libin16 add Only for face unlock --start
 	if (g_operation_mode == 0x8006)
 		info->p_delay = 0;
 
-	// Set pipeline delay for bokeh
-	if (g_operation_mode == 0x8002)
-		info->p_delay = 1;
+    if (g_operation_mode == 0x8002)
+    {
+        CAM_INFO(CAM_SENSOR, "set pipeline delay for bokeh");
+        info->p_delay = 1;
+    }
+	// XIAOMI: libin16 add Only for face unlock --end
 
 	return rc;
 }
@@ -1452,6 +1278,7 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 	struct i2c_settings_array *i2c_set = NULL;
 	struct i2c_settings_list *i2c_list;
 
+	CAM_DBG(CAM_XIAOMI, "opcode: %d, req_id: %d", opcode, req_id);
 	if (req_id == 0) {
 		switch (opcode) {
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_STREAMON: {
@@ -1478,6 +1305,18 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 		if (i2c_set->is_settings_valid == 1) {
 			list_for_each_entry(i2c_list,
 				&(i2c_set->list_head), list) {
+				/* Added by qudao1@xiaomi.com */
+				CAM_DBG(CAM_XIAOMI, "cci_i2c_master %d, slvaddr 0x%x, freq_mode %d",
+					s_ctrl->io_master_info.cci_client->cci_i2c_master,
+					s_ctrl->io_master_info.cci_client->sid << 1,
+					s_ctrl->io_master_info.cci_client->i2c_freq_mode);
+				for (i = 0; i < i2c_list->i2c_settings.size; i++) {
+					CAM_DBG(CAM_XIAOMI, "[%04d] 0x%04X 0x%04X 0x%02X", i,
+						i2c_list->i2c_settings.reg_setting[i].reg_addr,
+						i2c_list->i2c_settings.reg_setting[i].reg_data,
+						i2c_list->i2c_settings.reg_setting[i].delay);
+				}
+				/* End of Added by qudao1@xiaomi.com */
 				rc = cam_sensor_i2c_modes_util(
 					&(s_ctrl->io_master_info),
 					i2c_list);

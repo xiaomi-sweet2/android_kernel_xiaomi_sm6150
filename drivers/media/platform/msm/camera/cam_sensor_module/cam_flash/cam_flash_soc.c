@@ -239,7 +239,6 @@ int cam_flash_get_dt_data(struct cam_flash_ctrl *fctrl,
 	} else {
 		of_node = fctrl->pdev->dev.of_node;
 	}
-
 	rc = cam_soc_util_get_dt_properties(soc_info);
 	if (rc) {
 		CAM_ERR(CAM_FLASH, "Get_dt_properties failed rc %d", rc);

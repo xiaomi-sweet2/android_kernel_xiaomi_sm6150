@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -446,14 +446,12 @@ static int32_t cam_cci_calc_cmd_len(struct cci_device *cci_dev,
 {
 #if 0 //disable I2C writing optimization due to OIS
 	uint8_t i;
+	struct cam_sensor_i2c_reg_array *cmd = i2c_cmd;
 #endif
 	uint32_t len = 0;
 	uint8_t data_len = 0, addr_len = 0;
 	uint8_t pack_max_len;
 	struct cam_sensor_i2c_reg_setting *msg;
-#if 0 //disable I2C writing optimization due to OIS
-	struct cam_sensor_i2c_reg_array *cmd = i2c_cmd;
-#endif
 	uint32_t size = cmd_size;
 
 	if (!cci_dev || !c_ctrl) {
@@ -1735,7 +1733,15 @@ int32_t cam_cci_core_cfg(struct v4l2_subdev *sd,
 	case MSM_CCI_I2C_READ:
 		mutex_lock(&cci_dev->init_mutex);
 		rc = cam_cci_read_bytes(sd, cci_ctrl);
+		/* Added by qudao1@xiaomi.com */
+		if (rc < 0) {
+			CAM_ERR(CAM_CCI, "cam cci err %d , read, slav 0x%x on dev/master %d/%d",
+				rc, cci_ctrl->cci_info->sid << 1,
+				cci_ctrl->cci_info->cci_device,
+				cci_ctrl->cci_info->cci_i2c_master);
+		}
 		mutex_unlock(&cci_dev->init_mutex);
+		/* End of Added by qudao1@xiaomi.com */
 		break;
 	case MSM_CCI_I2C_WRITE:
 	case MSM_CCI_I2C_WRITE_SEQ:
@@ -1745,7 +1751,16 @@ int32_t cam_cci_core_cfg(struct v4l2_subdev *sd,
 	case MSM_CCI_I2C_WRITE_SYNC_BLOCK:
 		mutex_lock(&cci_dev->init_mutex);
 		rc = cam_cci_write(sd, cci_ctrl);
+		/* Added by qudao1@xiaomi.com */
+		if (rc < 0) {
+			CAM_ERR(CAM_CCI, "cam cci err %d , write type %d , slav 0x%x on dev/master %d/%d",
+				rc, cci_ctrl->cmd,
+				cci_ctrl->cci_info->sid << 1,
+				cci_ctrl->cci_info->cci_device,
+				cci_ctrl->cci_info->cci_i2c_master);
+		}
 		mutex_unlock(&cci_dev->init_mutex);
+		/* End of Added by qudao1@xiaomi.com */
 		break;
 	case MSM_CCI_GPIO_WRITE:
 		break;

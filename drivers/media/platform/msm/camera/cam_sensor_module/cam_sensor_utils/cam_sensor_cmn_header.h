@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -132,7 +132,6 @@ enum sensor_sub_module {
 	SUB_MODULE_CSID,
 	SUB_MODULE_CSIPHY,
 	SUB_MODULE_OIS,
-	SUB_MODULE_IR_LED,
 	SUB_MODULE_EXT,
 #ifdef CONFIG_SOFTLED_CAMERA
 	SUB_MODULE_LED_SOFT,
@@ -187,8 +186,8 @@ enum cam_eeprom_packet_opcodes {
 
 enum cam_ois_packet_opcodes {
 	CAM_OIS_PACKET_OPCODE_INIT,
-	CAM_OIS_PACKET_OPCODE_OIS_CONTROL,
-	CAM_OIS_PACKET_OPCODE_OIS_GETDATA
+    CAM_OIS_PACKET_OPCODE_OIS_CONTROL,
+    CAM_OIS_PACKET_OPCODE_OIS_GETDATA
 };
 
 enum msm_bus_perf_setting {
@@ -342,7 +341,6 @@ enum msm_sensor_camera_id_t {
 	CAMERA_4,
 	CAMERA_5,
 	CAMERA_6,
-	CAMERA_7,
 	MAX_CAMERAS,
 };
 
@@ -378,11 +376,8 @@ struct cam_sensor_board_info {
 	int32_t  subdev_intf[SUB_MODULE_MAX];
 	const char *misc_regulator;
 	struct cam_sensor_power_ctrl_t power_info;
-#if (defined CONFIG_LDO_WL2866D) || (defined CONFIG_MACH_XIAOMI_VIOLET)
-	uint16_t camera_id;
-#endif
-#ifdef CONFIG_MACH_XIAOMI_VIOLET
-	const char *sensorName;
+#ifdef CONFIG_LDO_WL2866D
+    uint16_t camera_id;
 #endif
 };
 

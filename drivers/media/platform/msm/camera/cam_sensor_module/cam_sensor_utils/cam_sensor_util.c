@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -17,7 +17,6 @@
 
 #define CAM_SENSOR_PINCTRL_STATE_SLEEP "cam_suspend"
 #define CAM_SENSOR_PINCTRL_STATE_DEFAULT "cam_default"
-
 #ifdef CONFIG_LDO_WL2866D
 extern int wl2866d_camera_power_up(int out_iotype);
 extern int wl2866d_camera_power_down(int out_iotype);
@@ -26,10 +25,10 @@ extern int wl2866d_camera_power_down(int out_iotype);
 #define DELAY_SETP 1000
 
 #endif
-
 #if (defined CONFIG_LEDS_QPNP_VIBRATOR_LDO) && (defined __XIAOMI_CAMERA__)
 extern int qpnp_vibrator_ldo_power(bool enable);
 #endif
+
 
 #define VALIDATE_VOLTAGE(min, max, config_val) ((config_val) && \
 	(config_val >= min) && (config_val <= max))
@@ -49,8 +48,14 @@ static struct i2c_settings_list*
 	else
 		return NULL;
 
+	// MI MOD: START
+	// tmp->i2c_settings.reg_setting = (struct cam_sensor_i2c_reg_array *)
+	// kcalloc(size, sizeof(struct cam_sensor_i2c_reg_array),
+	//	GFP_KERNEL);
 	tmp->i2c_settings.reg_setting = (struct cam_sensor_i2c_reg_array *)
-		vzalloc(size * sizeof(struct cam_sensor_i2c_reg_array));
+		vzalloc(sizeof(struct cam_sensor_i2c_reg_array) * size);
+	// END
+
 	if (tmp->i2c_settings.reg_setting == NULL) {
 		list_del(&(tmp->list));
 		kvfree(tmp);
@@ -73,6 +78,8 @@ int32_t delete_request(struct i2c_settings_array *i2c_array)
 
 	list_for_each_entry_safe(i2c_list, i2c_next,
 		&(i2c_array->list_head), list) {
+		// MI MOD
+		// kfree(i2c_list->i2c_settings.reg_setting);
 		vfree(i2c_list->i2c_settings.reg_setting);
 		list_del(&(i2c_list->list));
 		kvfree(i2c_list);
@@ -350,7 +357,6 @@ int cam_sensor_i2c_command_parser(
 		cmd_buf = (uint32_t *)generic_ptr;
 		cmd_buf += cmd_desc[i].offset / sizeof(uint32_t);
 
-		remain_len -= cmd_desc[i].offset;
 		if (remain_len < cmd_desc[i].length) {
 			CAM_ERR(CAM_SENSOR, "buffer provided too small");
 			return -EINVAL;
@@ -827,6 +833,8 @@ int cam_sensor_util_request_gpio_table(
 
 	if (gpio_en) {
 		for (i = 0; i < size; i++) {
+			CAM_DBG(CAM_XIAOMI, "gpio request for gpio_num %d, flags %ld, label %s",
+				gpio_tbl[i].gpio, gpio_tbl[i].flags, gpio_tbl[i].label);
 			rc = cam_res_mgr_gpio_request(soc_info->dev,
 					gpio_tbl[i].gpio,
 					gpio_tbl[i].flags, gpio_tbl[i].label);
@@ -1487,6 +1495,8 @@ int msm_cam_sensor_handle_reg_gpio(int seq_type,
 	if (gpio_num_info->valid[gpio_offset] == 1) {
 		CAM_DBG(CAM_SENSOR, "VALID GPIO offset: %d, seqtype: %d",
 			 gpio_offset, seq_type);
+		CAM_DBG(CAM_XIAOMI, "set gpio_num %d 's val to %d",
+			 gpio_num_info->gpio_num[gpio_offset], val);
 		cam_res_mgr_gpio_set_value(
 			gpio_num_info->gpio_num
 			[gpio_offset], val);
@@ -1621,6 +1631,9 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 		}
 
 		CAM_DBG(CAM_SENSOR, "seq_type %d", power_setting->seq_type);
+		CAM_DBG(CAM_XIAOMI, "seq_type %d seq_val %d config_val %ld delay %d",
+			power_setting->seq_type, power_setting->seq_val,
+			power_setting->config_val, power_setting->delay);
 
 		switch (power_setting->seq_type) {
 		case SENSOR_MCLK:
@@ -1675,6 +1688,8 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 					power_setting->config_val;
 
 			for (j = 0; j < soc_info->num_clk; j++) {
+				CAM_DBG(CAM_XIAOMI, "enable %s, clk rate: %d",
+					soc_info->clk_name[j], soc_info->clk_rate[0][j]);
 				rc = cam_soc_util_clk_enable(soc_info->clk[j],
 					soc_info->clk_name[j],
 					soc_info->clk_rate[0][j]);
@@ -1731,6 +1746,8 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 			}
 			if (power_setting->seq_val < num_vreg) {
 				CAM_DBG(CAM_SENSOR, "Enable Regulator");
+				CAM_DBG(CAM_XIAOMI, "Enable Regulator %s",
+					soc_info->rgltr_name[power_setting->seq_val]);
 				vreg_idx = power_setting->seq_val;
 
 				soc_info->rgltr[vreg_idx] =
@@ -2003,7 +2020,8 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 		}
 
 		ps = NULL;
-		CAM_DBG(CAM_SENSOR, "seq_type %d",  pd->seq_type);
+		CAM_DBG(CAM_SENSOR, "seq_type %d, seq_val %d config_val %ld delay %d",\
+			pd->seq_type, pd->seq_val,pd->config_val, pd->delay);
 		switch (pd->seq_type) {
 		case SENSOR_MCLK:
 			for (i = soc_info->num_clk - 1; i >= 0; i--) {
@@ -2049,6 +2067,8 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 				if (pd->seq_val < num_vreg) {
 					CAM_DBG(CAM_SENSOR,
 						"Disable Regulator");
+					CAM_DBG(CAM_XIAOMI, "Disable Regulator %s",
+						soc_info->rgltr_name[ps->seq_val]);
 					ret =  cam_soc_util_regulator_disable(
 					soc_info->rgltr[ps->seq_val],
 					soc_info->rgltr_name[ps->seq_val],
@@ -2187,6 +2207,9 @@ int cam_sensor_core_mipi_switch(struct cam_sensor_power_ctrl_t *ctrl,
 			}
 
 			CAM_DBG(CAM_SENSOR, "seq_type %d", power_setting->seq_type);
+			CAM_DBG(CAM_XIAOMI, "seq_type %d seq_val %d config_val %ld delay %d",
+					power_setting->seq_type, power_setting->seq_val,
+					power_setting->config_val, power_setting->delay);
 
 			switch (power_setting->seq_type) {
 			case SENSOR_CUSTOM_GPIO1:
@@ -2227,6 +2250,10 @@ int cam_sensor_core_mipi_switch(struct cam_sensor_power_ctrl_t *ctrl,
 			}
 
 			CAM_DBG(CAM_SENSOR, "seq_type %d", power_down_setting->seq_type);
+			CAM_DBG(CAM_XIAOMI, "seq_type %d seq_val %d config_val %ld delay %d",
+					power_down_setting->seq_type, power_down_setting->seq_val,
+					power_down_setting->config_val, power_down_setting->delay);
+
 			switch (power_down_setting->seq_type) {
 			case SENSOR_CUSTOM_GPIO1:
 			//case SENSOR_CUSTOM_GPIO2:
@@ -2255,3 +2282,4 @@ int cam_sensor_core_mipi_switch(struct cam_sensor_power_ctrl_t *ctrl,
 	}
 	return rc;
 }
+

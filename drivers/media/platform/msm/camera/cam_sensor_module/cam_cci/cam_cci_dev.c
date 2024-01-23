@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -425,7 +425,7 @@ static int cam_cci_platform_probe(struct platform_device *pdev)
 
 	g_cci_subdev[soc_info->index] = &new_cci_dev->v4l2_dev_str.sd;
 	mutex_init(&(new_cci_dev->init_mutex));
-	CAM_INFO(CAM_CCI, "Device Type :%d", soc_info->index);
+	CAM_ERR(CAM_CCI, "Device Type :%d", soc_info->index);
 
 	cam_register_subdev_fops(&cci_v4l2_subdev_fops);
 	cci_v4l2_subdev_fops.unlocked_ioctl = cam_cci_subdev_fops_ioctl;
@@ -442,15 +442,13 @@ static int cam_cci_platform_probe(struct platform_device *pdev)
 	rc = cam_cpas_register_client(&cpas_parms);
 	if (rc) {
 		CAM_ERR(CAM_CCI, "CPAS registration failed");
-		goto cci_unregister_subdev;
+		goto cci_no_resource;
 	}
 	CAM_DBG(CAM_CCI, "CPAS registration successful handle=%d",
 		cpas_parms.client_handle);
 	new_cci_dev->cpas_handle = cpas_parms.client_handle;
 
 	return rc;
-cci_unregister_subdev:
-	cam_unregister_subdev(&(new_cci_dev->v4l2_dev_str));
 cci_no_resource:
 	kfree(new_cci_dev);
 	return rc;
