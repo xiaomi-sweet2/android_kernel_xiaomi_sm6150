@@ -183,6 +183,7 @@
 				reg = <ADC_PARALLEL_ISENSE_VBAT_VDATA>;
 				label = "v_i_parallel_vbat_vdata";
 				qcom,pre-scaling = <1 1>;
+				status = "disabled";
 			};
 
 		};

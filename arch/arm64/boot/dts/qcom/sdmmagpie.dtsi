@@ -547,37 +547,37 @@
 		pil_adsp_mem: pil_adsp_region@95700000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x95700000 0 0x1e00000>;
+			reg = <0 0x95700000 0 0x2600000>;
 		};
 
-		wlan_msa_mem: wlan_msa_region@97500000 {
+		wlan_msa_mem: wlan_msa_region@97d00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x97500000 0 0x180000>;
+			reg = <0 0x97d00000 0 0x180000>;
 		};
 
-		npu_mem: npu_region@97680000 {
+		npu_mem: npu_region@97e80000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x97680000 0 0x80000>;
+			reg = <0 0x97e80000 0 0x80000>;
 		};
 
-		pil_ipa_fw_mem: ips_fw_region@97700000 {
+		pil_ipa_fw_mem: ips_fw_region@97f00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x97700000 0 0x10000>;
+			reg = <0 0x97f00000 0 0x10000>;
 		};
 
-		pil_ipa_gsi_mem: ipa_gsi_region@97710000 {
+		pil_ipa_gsi_mem: ipa_gsi_region@97f10000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x97710000 0 0x5000>;
+			reg = <0 0x97f10000 0 0x5000>;
 		};
 
-		pil_gpu_mem: gpu_region@97715000 {
+		pil_gpu_mem: gpu_region@97f15000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x97715000 0 0x2000>;
+			reg = <0 0x97f15000 0 0x2000>;
 		};
 
 		qseecom_mem: qseecom_region@9e400000 {
@@ -2406,7 +2406,7 @@
 
 	qcom,rmtfs_sharedmem@0 {
 		compatible = "qcom,sharedmem-uio";
-		reg = <0x0 0x200000>;
+		reg = <0x0 0x300000>;
 		reg-names = "rmtfs";
 		qcom,client-id = <0x00000001>;
 		qcom,guard-memory;
