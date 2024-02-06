@@ -1000,6 +1000,14 @@ static int msm_pcm_capture_copy(struct snd_pcm_substream *substream,
 		offset = prtd->in_frame_info[idx].offset;
 		pr_debug("Offset value = %d\n", offset);
 
+#ifdef CONFIG_TARGET_PRODUCT_K6
+		if (!size || size < prtd->pcm_count) {
+			memset(bufptr + offset + size, 0, prtd->pcm_count - size);
+			size = min((unsigned long)prtd->pcm_count, fbytes);
+			xfer = size;
+		}
+#endif
+
 		if (offset >= size) {
 			pr_err("%s: Invalid dsp buf offset\n", __func__);
 			ret = -EFAULT;
