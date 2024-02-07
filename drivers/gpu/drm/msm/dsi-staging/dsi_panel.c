@@ -3791,7 +3791,7 @@ int dsi_panel_drv_deinit(struct dsi_panel *panel)
 	return rc;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_SWEET
+#if defined(CONFIG_MACH_XIAOMI_SWEET) || defined(CONFIG_MACH_XIAOMI_SWEET2)
 void dsi_panel_gamma_mode_change(struct dsi_panel *panel,
 			struct dsi_display_mode *adj_mode)
 {

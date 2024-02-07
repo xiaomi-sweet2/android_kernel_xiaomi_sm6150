@@ -6954,7 +6954,7 @@ int dsi_display_set_mode(struct dsi_display *display,
 		goto error;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_SWEET
+#if defined(CONFIG_MACH_XIAOMI_SWEET) || defined(CONFIG_MACH_XIAOMI_SWEET2)
 	if (adj_mode.timing.refresh_rate == 60)
 		dsi_panel_gamma_mode_change(display->panel, &adj_mode);
 #endif
@@ -7886,7 +7886,7 @@ int dsi_display_post_enable(struct dsi_display *display)
 		dsi_display_clk_ctrl(display->dsi_clk_handle,
 			DSI_ALL_CLKS, DSI_CLK_OFF);
 
-#ifdef CONFIG_MACH_XIAOMI_SWEET
+#if defined(CONFIG_MACH_XIAOMI_SWEET) || defined(CONFIG_MACH_XIAOMI_SWEET2)
 	dsi_panel_gamma_mode_change(display->panel, display->panel->cur_mode);
 #endif
 

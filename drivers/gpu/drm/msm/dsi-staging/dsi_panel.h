@@ -320,7 +320,7 @@ int dsi_panel_get_phy_props(struct dsi_panel *panel,
 int dsi_panel_get_dfps_caps(struct dsi_panel *panel,
 			    struct dsi_dfps_capabilities *dfps_caps);
 
-#ifdef CONFIG_MACH_XIAOMI_SWEET
+#if defined(CONFIG_MACH_XIAOMI_SWEET) || defined(CONFIG_MACH_XIAOMI_SWEET2)
 void dsi_panel_gamma_mode_change(struct dsi_panel *panel,
                         struct dsi_display_mode *adj_mode);
 #endif
