@@ -1572,6 +1572,12 @@ config MACH_XIAOMI_SWEET
         help
           Support for Redmi Note 10 Pro, codenamed sweet.
 
+config MACH_XIAOMI_SWEET2
+        bool "sweet2 board"
+        select MACH_XIAOMI_SDMMAGPIE
+        help
+          Support for Redmi Note 12 Pro, codenamed sweet2.
+
 config MACH_XIAOMI_TOCO
         bool "toco board"
         select MACH_XIAOMI_SDMMAGPIE
