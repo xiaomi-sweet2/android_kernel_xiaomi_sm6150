@@ -17,6 +17,8 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/clock/qcom,camcc-sdmmagpie.h>
 
+#define SWEET2
+
 #include "xiaomi/sweet2/sweet-audio-overlay.dtsi"
 #include "xiaomi/sweet2/sweet-sdmmagpie.dtsi"
 #include "xiaomi/sweet2/sweet-nfc-overlay.dtsi"
