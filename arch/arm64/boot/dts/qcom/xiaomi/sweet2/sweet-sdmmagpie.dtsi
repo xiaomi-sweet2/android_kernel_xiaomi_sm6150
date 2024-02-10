@@ -933,6 +933,10 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		qcom,hw-settle-time = <200>;
 		qcom,pre-scaling = <1 1>;
 	};
+
+	v_i_parallel {
+		status = "disabled";
+	};
 };
 
 &pm6150_adc_tm {
