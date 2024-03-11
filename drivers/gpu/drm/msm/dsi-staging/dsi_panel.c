@@ -4609,7 +4609,7 @@ int dsi_panel_post_switch(struct dsi_panel *panel)
 int dsi_panel_write_cmd_set(struct dsi_panel *panel,
 				struct dsi_panel_cmd_set *cmd_sets)
 {
-	int rc = 0, i = 0;
+	int rc = 0, i;
 	ssize_t len;
 	struct dsi_cmd_desc *cmds;
 	u32 count;
@@ -4626,7 +4626,7 @@ int dsi_panel_write_cmd_set(struct dsi_panel *panel,
 	count = cmd_sets->count;
 	state = cmd_sets->state;
 
-	if (count == 0) {
+	if (!count) {
 		pr_debug("[%s] No commands to be sent for state\n", panel->name);
 		goto error;
 	}
@@ -4656,23 +4656,16 @@ error:
 int dsi_panel_read_cmd_set(struct dsi_panel *panel,
 		struct dsi_read_config *read_config)
 {
-	struct mipi_dsi_host *host;
 	struct dsi_display *display;
 	struct dsi_display_ctrl *ctrl;
 	struct dsi_cmd_desc *cmds;
-	int rc = 0, count = 0;
+	int rc;
 	u32 flags = 0;
 
-	if (!panel || !read_config)
+	if (!panel || !panel->host || !read_config)
 		return -EINVAL;
 
-	host = panel->host;
-	if (!host)
-		return -EINVAL;
-
-	display = container_of(host, struct dsi_display, host);
-	if (!display)
-		return -EINVAL;
+	display = container_of(panel->host, struct dsi_display, host);
 
 	if (!read_config->enabled) {
 		pr_info("read operation was not permitted\n");
@@ -4691,7 +4684,7 @@ int dsi_panel_read_cmd_set(struct dsi_panel *panel,
 		goto exit_ctrl;
 	}
 
-	if (display->tx_cmd_buf == NULL) {
+	if (!display->tx_cmd_buf) {
 		rc = dsi_host_alloc_cmd_tx_buffer(display);
 		if (rc) {
 			pr_err("failed to allocate cmd tx buffer memory\n");
@@ -4699,7 +4692,6 @@ int dsi_panel_read_cmd_set(struct dsi_panel *panel,
 		}
 	}
 
-	count = read_config->read_cmd.count;
 	cmds = read_config->read_cmd.cmds;
 	if (cmds->last_command) {
 		cmds->msg.flags |= MIPI_DSI_MSG_LASTCOMMAND;
