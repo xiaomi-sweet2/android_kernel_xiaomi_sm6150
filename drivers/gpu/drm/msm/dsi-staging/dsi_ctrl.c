@@ -2354,7 +2354,13 @@ static bool dsi_ctrl_check_for_spurious_error_interrupts(
 
 	if ((jiffies_now - dsi_ctrl->jiffies_start) < intr_check_interval) {
 		if (dsi_ctrl->error_interrupt_count > interrupt_threshold) {
+#ifndef CONFIG_MACH_XIAOMI_SWEET2
 			pr_warn("Detected spurious interrupts on dsi ctrl\n");
+#else
+			SDE_EVT32_IRQ(dsi_ctrl->cell_index,
+						dsi_ctrl->error_interrupt_count,
+						interrupt_threshold);
+#endif
 			return true;
 		}
 	} else {
