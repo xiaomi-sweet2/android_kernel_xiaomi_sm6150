@@ -3236,14 +3236,6 @@ void walt_irq_work(struct irq_work *irq_work)
 
 void walt_rotation_checkpoint(int nr_big)
 {
-	if (!hmp_capable())
-		return;
-
-	if (!sysctl_sched_walt_rotate_big_tasks || sched_boost() != NO_BOOST) {
-		walt_rotation_enabled = 0;
-		return;
-	}
-
 	walt_rotation_enabled = nr_big >= num_possible_cpus();
 }
 
